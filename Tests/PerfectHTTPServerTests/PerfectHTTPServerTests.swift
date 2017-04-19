@@ -883,74 +883,78 @@ class PerfectHTTPServerTests: XCTestCase {
 						]
 					]
 				]
-			]
-		]
-		let configs: [HTTPServer.LaunchContext]
-		do {
-			configs = try HTTPServer.launch(wait: false, configurationData: confData)
-		} catch {
-			return XCTAssert(false, "Error: \(error)")
-		}
-		
-		let clientExpectation = self.expectation(description: "client")
-		
-		do {
-			try NetTCP().connect(address: "127.0.0.1", port: UInt16(port), timeoutSeconds: 5.0) {
-				net in
-				
-				guard let net = net else {
-					XCTAssert(false, "Could not connect to server")
-					return clientExpectation.fulfill()
-				}
-				let reqStr = "GET /test.html HTTP/1.0\r\nHost: localhost:\(port)\r\nAccept-Encoding: gzip, deflate\r\n\r\n"
-				net.write(string: reqStr) {
-					count in
-					
-					guard count == reqStr.utf8.count else {
-						XCTAssert(false, "Could not write request \(count) != \(reqStr.utf8.count)")
-						return clientExpectation.fulfill()
-					}
-					
-					Threading.sleep(seconds: 2.0)
-					net.readSomeBytes(count: 1024) {
-						bytes in
-						
-						guard let bytes = bytes, bytes.count > 0 else {
-							XCTAssert(false, "Could not read bytes from server")
-							return clientExpectation.fulfill()
-						}
-						
-//						let str = UTF8Encoding.encode(bytes: bytes)
-//						let splitted = str.characters.split(separator: "\r\n").map(String.init)
-						
-//						XCTAssert(splitted.last == msg)
-						
-						clientExpectation.fulfill()
-					}
-				}
-			}
-		} catch {
-			XCTAssert(false, "Error thrown: \(error)")
-			clientExpectation.fulfill()
-		}
-		
-		waitForExpectations(timeout: 10000) {
-			_ in
-			configs.forEach { $0.terminate() }
-		}
-	}
-/*
-	func testScratch() {
-		try! testingScratch()
-	}
-*/
+            ]
+        ]
+        var configs: [HTTPServer.LaunchContext] = []
+        
+        Threading.dispatch {
+            do {
+                configs = try HTTPServer.launch(wait: false, configurationData: confData)
+            } catch {
+                return XCTAssert(false, "Error: \(error)")
+            }
+        }
+        let clientExpectation = self.expectation(description: "client")
+        
+        Threading.sleep(seconds: 1.0)
+        Threading.dispatch {
+            do {
+                try NetTCP().connect(address: "127.0.0.1", port: UInt16(port), timeoutSeconds: 5.0) {
+                    net in
+                    
+                    guard let net = net else {
+                        XCTAssert(false, "Could not connect to server")
+                        return clientExpectation.fulfill()
+                    }
+                    let reqStr = "GET /test.html HTTP/1.0\r\nHost: localhost:\(port)\r\nAccept-Encoding: gzip, deflate\r\n\r\n"
+                    net.write(string: reqStr) {
+                        count in
+                        
+                        guard count == reqStr.utf8.count else {
+                            XCTAssert(false, "Could not write request \(count) != \(reqStr.utf8.count)")
+                            return clientExpectation.fulfill()
+                        }
+                        
+                        Threading.sleep(seconds: 2.0)
+                        net.readSomeBytes(count: 1024) {
+                            bytes in
+                            
+                            guard let bytes = bytes, bytes.count > 0 else {
+                                XCTAssert(false, "Could not read bytes from server")
+                                return clientExpectation.fulfill()
+                            }
+                            
+                            //						let str = UTF8Encoding.encode(bytes: bytes)
+                            //						let splitted = str.characters.split(separator: "\r\n").map(String.init)
+                            
+                            //						XCTAssert(splitted.last == msg)
+                            
+                            clientExpectation.fulfill()
+                        }
+                    }
+                }
+            } catch {
+                XCTAssert(false, "Error thrown: \(error)")
+                clientExpectation.fulfill()
+            }
+        }
+        waitForExpectations(timeout: 10000) {
+            _ in
+            configs.forEach { $0.terminate() }
+        }
+    }
+    /*
+     func testScratch() {
+     try! testingScratch()
+     }
+     */
     static var allTests : [(String, (PerfectHTTPServerTests) -> () throws -> Void)] {
         return [
-			("testHPACKEncode", testHPACKEncode),
-			("testWebConnectionHeadersWellFormed", testWebConnectionHeadersWellFormed),
-			("testWebConnectionHeadersLF", testWebConnectionHeadersLF),
-			("testWebConnectionHeadersMalormed", testWebConnectionHeadersMalormed),
-			("testWebConnectionHeadersFolded", testWebConnectionHeadersFolded),
+            ("testHPACKEncode", testHPACKEncode),
+            ("testWebConnectionHeadersWellFormed", testWebConnectionHeadersWellFormed),
+            ("testWebConnectionHeadersLF", testWebConnectionHeadersLF),
+            ("testWebConnectionHeadersMalormed", testWebConnectionHeadersMalormed),
+            ("testWebConnectionHeadersFolded", testWebConnectionHeadersFolded),
 			("testWebConnectionHeadersTooLarge", testWebConnectionHeadersTooLarge),
 			("testWebRequestQueryParam", testWebRequestQueryParam),
 			("testWebRequestCookie", testWebRequestCookie),
