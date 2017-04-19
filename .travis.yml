@@ -17,8 +17,8 @@ matrix:
       services:
        - docker
       before_install:
-       - docker pull perfectlysoft/perfectassistant
+       - docker pull sportlabs/perfectserver
       script:
        - PWDIR=`pwd`
-       - docker run --privileged -i -t -v $PWDIR:/Perfect-HTTPServer perfectlysoft/perfectassistant /bin/bash -c "cd /Perfect-HTTPServer; swift test"
+       - docker run --privileged -i -t -v $PWDIR:/Perfect-HTTPServer sportlabs/perfectserver /bin/bash -c "cd /Perfect-HTTPServer; swift test"
 
